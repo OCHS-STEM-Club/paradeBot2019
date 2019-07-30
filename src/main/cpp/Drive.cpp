@@ -42,3 +42,41 @@ void DriveManager::driveControl() {
 
     drive->ArcadeDrive(yStickControl, zStickControl);
 }
+
+
+
+
+
+void PID_Initialize (PID_STRUCT* pid_info, int Kp_value, int Ki_value, int Kd_value, int imax_value)
+{
+//intialize ze values of ze pid structair
+pid_info->Kp = Kp_value;
+pid_info->Ki = Ki_value;
+pid_info->Kd = Kd_value;
+pid_info->imax = imax_value;
+}
+
+
+unsigned char PID (PID_STRUCT* pid_info, int error)
+{
+int P;
+int I;
+int D;
+
+P = (((long)error * (pid_info->Kp))/ 1000);
+I = (((long)(pid_info->error_sum) * (pid_info->Ki)) / 10000);
+D = (((long)(error - (pid_info->last_error)) * (pid_info->Kd)) / 10);
+
+pid_info->last_error = error;
+
+if(!disabled_mode)
+pid_info->error_sum += error;
+
+if (I > pid_info->imax)
+	pid_info->error_sum = pid_info->imax;
+else if (I < -pid_info->imax)
+	pid_info->error_sum = -pid_info->imax;
+
+
+return Limit_Mix(2000 + 132 + P + I - D);
+}
