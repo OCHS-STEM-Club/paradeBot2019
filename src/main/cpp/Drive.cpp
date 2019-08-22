@@ -1,19 +1,30 @@
 #include "Drive.hpp"
 
 DriveManager::DriveManager() {
-    stick = new frc::Joystick(0);
+ xbox = new frc::XboxController(1);
 
-    leftMotor = new WPI_TalonSRX(1);
-    rightMotor = new WPI_TalonSRX(2);
-    leftFollowerMotor = new WPI_TalonSRX(3);
-    rightFollowerMotor = new WPI_TalonSRX(4);
+/*  leftMotor = new WPI_TalonSRX(2);
+    rightMotor = new WPI_TalonSRX(3);
+    leftFollowerMotor = new WPI_TalonSRX(4);
+    rightFollowerMotor = new WPI_TalonSRX(5); */
+
+    leftMotor = new frc::Victor{1};
+    rightMotor = new frc::Victor{2};
+    
+
+    //leftMotor = new WPI_VictorSPX(1);
+    //rightMotor = new WPI_VictorSPX(2);
+ //   leftFollowerMotor = new WPI_VictorSPX(4);
+ //   rightFollowerMotor = new WPI_VictorSPX(5);
 
     drive = new frc::DifferentialDrive(*leftMotor,*rightMotor);
 
-    leftFollowerMotor->Follow(*leftMotor);
-    rightFollowerMotor->Follow(*rightMotor);
+  //  leftFollowerMotor->Follow(*leftMotor);
+  //  rightFollowerMotor->Follow(*rightMotor);
  
 }
+
+
 
 int Sign(double input) {
     if (input > 0) {
@@ -37,46 +48,58 @@ double deadband(double joystickValue, double deadbandValue) {
 }
 
 void DriveManager::driveControl() {
-    yStickControl = deadband(stick->GetRawAxis(1), 0.1);
-    zStickControl = deadband(stick->GetRawAxis(2), 0.1);
+    yXboxControl = xbox->GetRawAxis(1);//deadband(xboxDrive->GetRawAxis(1), 0.1);
+    xXboxControl = xbox->GetRawAxis(4);//deadband(xboxDrive->GetRawAxis(4), 0.1);
 
-    drive->ArcadeDrive(yStickControl, zStickControl);
+    if (!xbox->GetRawButton(6)) {
+        yXboxControl = yXboxControl * 0.75;
+        xXboxControl = xXboxControl * 0.75;
+    }
+    
+
+    drive->ArcadeDrive(-yXboxControl, xXboxControl);
+
+    //leftMotor->Set(xboxDrive->GetRawAxis(1) * 0.2);
 }
 
 
 
 
 
-void PID_Initialize (PID_STRUCT* pid_info, int Kp_value, int Ki_value, int Kd_value, int imax_value)
+void DriveManager::PID_Initialize (int Kp, int Ki, int Kd, int imax, int Kp_value, int Ki_value, int Kd_value, int imax_value)
 {
 //intialize ze values of ze pid structair
-pid_info->Kp = Kp_value;
-pid_info->Ki = Ki_value;
-pid_info->Kd = Kd_value;
-pid_info->imax = imax_value;
+Kp = Kp_value;
+Ki = Ki_value;
+Kd = Kd_value;
+imax = imax_value;
 }
 
 
-unsigned char PID (PID_STRUCT* pid_info, int error)
+unsigned char PID (int Kp, int Ki, int Kd, int last_error, int error_sum, int imax, int error)
 {
 int P;
 int I;
 int D;
 
-P = (((long)error * (pid_info->Kp))/ 1000);
-I = (((long)(pid_info->error_sum) * (pid_info->Ki)) / 10000);
-D = (((long)(error - (pid_info->last_error)) * (pid_info->Kd)) / 10);
+P = (((long)error * (Kp))/ 1000);
+I = (((long)(error_sum) * (Ki)) / 10000);
+D = (((long)(error - (last_error)) * (Kd)) / 10);
 
-pid_info->last_error = error;
+last_error = error;
 
-if(!disabled_mode)
-pid_info->error_sum += error;
+/*if(!disabled_mode) {
+    error_sum += error;
+}*/
 
-if (I > pid_info->imax)
-	pid_info->error_sum = pid_info->imax;
-else if (I < -pid_info->imax)
-	pid_info->error_sum = -pid_info->imax;
+if (I > imax) {
+	error_sum = imax;
+}
+else if (I < -imax) {
+	error_sum = -imax;
+}
 
 
-return Limit_Mix(2000 + 132 + P + I - D);
+//return Limit_Mix(2000 + 132 + P + I - D);
+return (2000 + 132 + P + I - D);
 }
