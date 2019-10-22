@@ -8,6 +8,26 @@ DriveManager::DriveManager() {
     leftFollowerMotor = new WPI_TalonSRX(4);
     rightFollowerMotor = new WPI_TalonSRX(5); */
 
+    double kTimeoutMs = 10;
+	double kPIDLoopIdx = 0;
+
+    pidMotor = new WPI_TalonSRX(3);
+    pidMotor->ConfigSelectedFeedbackSensor(FeedbackDevice::CTRE_MagEncoder_Relative, kPIDLoopIdx, kTimeoutMs);
+    //pidMotor->SetSensorPhase(true); //to invert sensor
+	//pidMotor->SetInverted(false);
+	pidMotor->ConfigAllowableClosedloopError(kPIDLoopIdx, 0, kTimeoutMs);
+
+    pidMotor->ConfigNominalOutputForward(0, kTimeoutMs);
+	pidMotor->ConfigNominalOutputReverse(0, kTimeoutMs);
+	pidMotor->ConfigPeakOutputForward(1, kTimeoutMs);
+	pidMotor->ConfigPeakOutputReverse(-1 , kTimeoutMs);
+
+	/* set closed loop gains in slot0 */
+	pidMotor->Config_kF(kPIDLoopIdx, 0.0, kTimeoutMs);
+	pidMotor->Config_kP(kPIDLoopIdx, 16, kTimeoutMs);
+	pidMotor->Config_kI(kPIDLoopIdx, 0.0, kTimeoutMs);
+	pidMotor->Config_kD(kPIDLoopIdx, 0.0, kTimeoutMs);
+
     leftMotor = new frc::Victor{1};
     rightMotor = new frc::Victor{2};
     
@@ -21,6 +41,7 @@ DriveManager::DriveManager() {
 
   //  leftFollowerMotor->Follow(*leftMotor);
   //  rightFollowerMotor->Follow(*rightMotor);
+
  
 }
 
@@ -51,10 +72,16 @@ void DriveManager::driveControl() {
     yXboxControl = xbox->GetRawAxis(1);//deadband(xboxDrive->GetRawAxis(1), 0.1);
     xXboxControl = xbox->GetRawAxis(4);//deadband(xboxDrive->GetRawAxis(4), 0.1);
 
+    
+
     if (!xbox->GetRawButton(6)) {
         yXboxControl = yXboxControl * 0.75;
         xXboxControl = xXboxControl * 0.75;
     }
+    //pidMotor->Set(0.4);
+
+    pidMotor->Set(ControlMode::Position, 0); //replace 0 with enc rotations
+    pidMotor->Set(ControlMode::Velocity, 0); //velocity in native units / 100ms
     
 
     drive->ArcadeDrive(-yXboxControl, xXboxControl);
@@ -65,7 +92,7 @@ void DriveManager::driveControl() {
 
 
 
-
+/*
 void DriveManager::PID_Initialize (int Kp, int Ki, int Kd, int imax, int Kp_value, int Ki_value, int Kd_value, int imax_value)
 {
 //intialize ze values of ze pid structair
@@ -88,9 +115,9 @@ D = (((long)(error - (last_error)) * (Kd)) / 10);
 
 last_error = error;
 
-/*if(!disabled_mode) {
-    error_sum += error;
-}*/
+//if(!disabled_mode) {
+//    error_sum += error;
+//}
 
 if (I > imax) {
 	error_sum = imax;
@@ -102,4 +129,6 @@ else if (I < -imax) {
 
 //return Limit_Mix(2000 + 132 + P + I - D);
 return (2000 + 132 + P + I - D);
-}
+
+
+} */
