@@ -3,11 +3,12 @@
 //#include <iostream>
 #include <frc/WPILib.h>
 #include <ctre/Phoenix.h>
-
+ 
 class DriveManager {
     private:
     //frc::Joystick *stick;
     frc::XboxController *xbox;
+    frc::Joystick *stick;
     frc::DifferentialDrive *drive;
     
 /*  WPI_TalonSRX *leftMotor;
@@ -26,12 +27,16 @@ class DriveManager {
     double xXboxControl;
     double yXboxControl;
 
-    int Kp; // In tenths
+    double xStickControl;
+
+    double velocityOut;
+
+    /*int Kp; // In tenths
     int Ki; // In thousandths
     int Kd; // In tenths
     int last_error;
     int error_sum;
-    int imax;
+    int imax; */
 
     public:
     DriveManager();

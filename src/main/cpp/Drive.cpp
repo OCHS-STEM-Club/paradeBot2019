@@ -2,6 +2,7 @@
 
 DriveManager::DriveManager() {
  xbox = new frc::XboxController(1);
+ stick = new frc::Joystick(0);
 
 /*  leftMotor = new WPI_TalonSRX(2);
     rightMotor = new WPI_TalonSRX(3);
@@ -68,11 +69,17 @@ double deadband(double joystickValue, double deadbandValue) {
     } 
 }
 
+double velocityConverter(double input) { //converts native units per 100 ms to rotations per mineut 
+    //return (input * 4096) * 60 / 1000.0; //10 is for time conversion. 4096 is units per rotation for encoder
+    return input * 6.8266666667; //ratio of rpm to na/100ms
+}
+
 void DriveManager::driveControl() {
     yXboxControl = xbox->GetRawAxis(1);//deadband(xboxDrive->GetRawAxis(1), 0.1);
     xXboxControl = xbox->GetRawAxis(4);//deadband(xboxDrive->GetRawAxis(4), 0.1);
 
-    
+    xStickControl = deadband(stick->GetRawAxis(1), 0.1);
+    velocityOut = xStickControl * 1; //replace 1 with max velocity (rot/min)
 
     if (!xbox->GetRawButton(6)) {
         yXboxControl = yXboxControl * 0.75;
@@ -81,7 +88,7 @@ void DriveManager::driveControl() {
     //pidMotor->Set(0.4);
 
     pidMotor->Set(ControlMode::Position, 0); //replace 0 with enc rotations
-    pidMotor->Set(ControlMode::Velocity, 0); //velocity in native units / 100ms
+    pidMotor->Set(ControlMode::Velocity, velocityConverter(velocityOut)); //velocity in native units / 100ms
     
 
     drive->ArcadeDrive(-yXboxControl, xXboxControl);
