@@ -12,16 +12,17 @@ DriveManager::DriveManager() {
     double kTimeoutMs = 10;
 	double kPIDLoopIdx = 0;
 
-    pidMotor = new WPI_TalonSRX(3);
+    pidMotor = new WPI_TalonSRX(2);
     pidMotor->ConfigSelectedFeedbackSensor(FeedbackDevice::CTRE_MagEncoder_Relative, kPIDLoopIdx, kTimeoutMs);
     //pidMotor->SetSensorPhase(true); //to invert sensor
 	//pidMotor->SetInverted(false);
 	pidMotor->ConfigAllowableClosedloopError(kPIDLoopIdx, 0, kTimeoutMs);
 
-    pidMotor->ConfigNominalOutputForward(0, kTimeoutMs);
+    //collins stuff, do not know purpose
+    /*pidMotor->ConfigNominalOutputForward(0, kTimeoutMs);
 	pidMotor->ConfigNominalOutputReverse(0, kTimeoutMs);
 	pidMotor->ConfigPeakOutputForward(1, kTimeoutMs);
-	pidMotor->ConfigPeakOutputReverse(-1 , kTimeoutMs);
+	pidMotor->ConfigPeakOutputReverse(-1 , kTimeoutMs); */
 
 	/* set closed loop gains in slot0 */
 	pidMotor->Config_kF(kPIDLoopIdx, 0.0, kTimeoutMs);
@@ -69,7 +70,7 @@ double deadband(double joystickValue, double deadbandValue) {
     } 
 }
 
-double velocityConverter(double input) { //converts native units per 100 ms to rotations per mineut 
+double velocityConverter(double input) { //converts rotations per minute to native units per 100 ms
     //return (input * 4096) * 60 / 1000.0; //10 is for time conversion. 4096 is units per rotation for encoder
     return input * 6.8266666667; //ratio of rpm to na/100ms
 }
@@ -78,64 +79,25 @@ void DriveManager::driveControl() {
     yXboxControl = xbox->GetRawAxis(1);//deadband(xboxDrive->GetRawAxis(1), 0.1);
     xXboxControl = xbox->GetRawAxis(4);//deadband(xboxDrive->GetRawAxis(4), 0.1);
 
-    xStickControl = deadband(stick->GetRawAxis(1), 0.1);
-    velocityOut = xStickControl * 1; //replace 1 with max velocity (rot/min)
 
     if (!xbox->GetRawButton(6)) {
         yXboxControl = yXboxControl * 0.75;
         xXboxControl = xXboxControl * 0.75;
     }
-    //pidMotor->Set(0.4);
-
-    pidMotor->Set(ControlMode::Position, 0); //replace 0 with enc rotations
-    pidMotor->Set(ControlMode::Velocity, velocityConverter(velocityOut)); //velocity in native units / 100ms
     
-
     drive->ArcadeDrive(-yXboxControl, xXboxControl);
 
     //leftMotor->Set(xboxDrive->GetRawAxis(1) * 0.2);
+
 }
 
+void DriveManager::pidControl() {
+    xStickControl = deadband(stick->GetRawAxis(1), 0.1);
+    velocityOut = xStickControl * 1; //replace 1 with max velocity (rot/min)
 
+    //pidMotor->Set(ControlMode::Position, 0); //replace 0 with enc rotations
+    pidMotor->Set(ControlMode::Velocity, velocityConverter(velocityOut)); //velocity in native units / 100ms
+    //pidMotor->Set(xStickControl);
 
-
-/*
-void DriveManager::PID_Initialize (int Kp, int Ki, int Kd, int imax, int Kp_value, int Ki_value, int Kd_value, int imax_value)
-{
-//intialize ze values of ze pid structair
-Kp = Kp_value;
-Ki = Ki_value;
-Kd = Kd_value;
-imax = imax_value;
+    frc::SmartDashboard::PutNumber("velocity", pidMotor->GetSensorCollection().GetQuadratureVelocity());
 }
-
-
-unsigned char PID (int Kp, int Ki, int Kd, int last_error, int error_sum, int imax, int error)
-{
-int P;
-int I;
-int D;
-
-P = (((long)error * (Kp))/ 1000);
-I = (((long)(error_sum) * (Ki)) / 10000);
-D = (((long)(error - (last_error)) * (Kd)) / 10);
-
-last_error = error;
-
-//if(!disabled_mode) {
-//    error_sum += error;
-//}
-
-if (I > imax) {
-	error_sum = imax;
-}
-else if (I < -imax) {
-	error_sum = -imax;
-}
-
-
-//return Limit_Mix(2000 + 132 + P + I - D);
-return (2000 + 132 + P + I - D);
-
-
-} */

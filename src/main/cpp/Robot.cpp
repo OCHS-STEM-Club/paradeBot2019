@@ -69,6 +69,8 @@ void Robot::TeleopInit() {}
 
 void Robot::TeleopPeriodic() {
   driveManager->driveControl();
+  driveManager->pidControl();
+
   pneumaticManager->air();
 }
 
